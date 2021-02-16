@@ -185,6 +185,10 @@
                         id = (JSON.parse(msg.data))[1];
 
                         switch (ddata[2]) {
+                            case "DataTransfer":
+                                var DataT = JSON.stringify([3, id, { "status": "Accepted" }]);
+                                _websocket.send(ClearS);
+                                break;
                             case "ClearCache":
                                 var ClearS = JSON.stringify([3, id, { "status": "Accepted" }]);
                                 _websocket.send(ClearS);
@@ -336,7 +340,7 @@
                 "transactionData": [{ "sampledValue": [{ "context": "Interruption.Begin", "format": "Raw", "location": "Body", "measurand": "Energy.Active.Import.Register", "phase": "L1", "unit": "Wh", "value": "100" }], "timestamp": formatDate(new Date()) }],
                 "timestamp": formatDate(new Date()),
                 "meterStop": 20,
-                "reason":"Local"
+                "reason": "Local"
             }]);
             _websocket.send(stpT);
         }
