@@ -187,7 +187,7 @@
                         switch (ddata[2]) {
                             case "DataTransfer":
                                 var DataT = JSON.stringify([3, id, { "status": "Accepted" }]);
-                                _websocket.send(ClearS);
+                                _websocket.send(DataT);
                                 break;
                             case "ClearCache":
                                 var ClearS = JSON.stringify([3, id, { "status": "Accepted" }]);
