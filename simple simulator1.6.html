@@ -1,10 +1,10 @@
-<html>
+<html lang="en">
 <head>
     <style>
         body {
             background: #000;
             color: white;
-            font-family: Arial;
+            font-family: Arial, sans-serif;
         }
 
         button, input, select {
@@ -47,23 +47,26 @@
         }
     </style>
     <meta charset="utf-8">
+    <title>Simple OCPP 1.6 Charge Box Simulator</title>
 </head>
 
 <body>
-<h1>Simple OCPP 1.6 Chargebox Simulator</h1>
-<select style="display:none;"><option value="">OCPP-J1.6</option></select>
-<label>Central Station</label><input id="CP" type="text" placeholder="Id Station"/>
-<label>Tag</label><input id="TAG" type="text" placeholder="Tag" value="B4A63CDF"/>
+<h1>Simple OCPP 1.6 Charge Box Simulator</h1>
+<select style="display:none;">
+    <option value="">OCPP-J1.6</option>
+</select>
+<label for="CP">Central Station</label><input id="CP" type="text" placeholder="Id Station"/>
+<label for="TAG">Tag</label><input id="TAG" type="text" placeholder="Tag" value="B4A63CDF"/>
 <h2>Actions</h2>
 <button id="connect">Connect</button>
 <button id="send">Authorize</button>
 <button id="start">Start Transaction</button>
 <button id="stop">Stop Transaction</button>
 <button id="heartbeat">Heartbeat</button>
-<label>Meter value</label><input id="metervalue" type="text" placeholder="Meter value" value="1"/>
+<label for="meter_value">Meter value</label><input id="meter_value" type="text" placeholder="Meter value" value="1"/>
 <button id="mv">Send Meter Values</button>
 <button id="status">Status Notification</button>
-<button id="data_transfer">Data Tranfer</button>
+<button id="data_transfer">Data Transfer</button>
 
 <div>
     <span class="indicator" id="red">____</span>
@@ -78,54 +81,54 @@
         crossorigin="anonymous"></script>
 
 <script>
-    var c = 0;
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    var id = randomString(10,possible)
-    var _websocket = null;
-    var connector_locked = false;
-    var ssid = 0;
+    let c = 0;
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let id = randomString(10, possible);
+    let _websocket = null;
+    let connector_locked = false;
+    let ssid = 0;
 
     function formatDate(date) {
-        var day = String(date.getDate());
-        if (day.length <2){
+        let day = String(date.getDate());
+        if (day.length < 2) {
             day = ('0' + day.slice(-2));
         }
 
-        var monthIndex = String(date.getMonth()+1);
-        if (monthIndex.length <2){
+        let monthIndex = String(date.getMonth() + 1);
+        if (monthIndex.length < 2) {
             monthIndex = ('0' + monthIndex.slice(-2));
         }
-        var year = date.getFullYear();
-        var h = date.getHours();
-        var m = String(date.getMinutes());
-        var s = String(date.getSeconds());
-        if (h.length <2){
+        const year = date.getFullYear();
+        let h = date.getHours();
+        let m = String(date.getMinutes());
+        let s = String(date.getSeconds());
+        if (h.length < 2) {
             h = ('0' + h.slice(-2));
         }
-        if (m.length <2){
+        if (m.length < 2) {
             m = ('0' + m.slice(-2));
         }
-        if (s.length <2){
+        if (s.length < 2) {
             s = ('0' + s.slice(-2));
         }
-        return year + '-' + monthIndex + '-' + day+"T"+h+":"+m+":"+s+"Z";
+        return year + '-' + monthIndex + '-' + day + "T" + h + ":" + m + ":" + s + "Z";
     }
 
     function randomString(length, chars) {
-        var result = '';
-        for (var i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
+        let result = '';
+        for (let i = length; i > 0; --i) result += chars[Math.floor(Math.random() * chars.length)];
         return result;
     }
 
     function wsConnect() {
-        var wsurl = $('select').val();
-        var CP = $('#CP').val();
+        const wsUrl = $('select').val();
+        const CP = $('#CP').val();
 
         if (_websocket) {
             $('#red').show();
             _websocket.close(3001);
         } else {
-            _websocket = new WebSocket(wsurl + "" + CP, ["ocpp1.6", "ocpp1.5"]);
+            _websocket = new WebSocket(wsUrl + "" + CP, ["ocpp1.6", "ocpp1.5"]);
             _websocket.onopen = function (authorizationData) {
 
                 sessionStorage.setItem('LastAction', "BootNotification");
@@ -138,7 +141,7 @@
 
             _websocket.onmessage = function (msg) {
                 c++;
-                var ddata = (JSON.parse(msg.data));
+                const ddata = (JSON.parse(msg.data));
                 let message;
                 /*if(c==1){
                     var hb_interval = handleData(ddata);
@@ -149,7 +152,7 @@
                 if (ddata[0] === 3) {
                     la = getLastAction();
 
-                    if (la == "startTransaction"){
+                    if (la === "startTransaction") {
 
                         //ddata = ddata[2];
                         logMsg("Data exchange successful!");
@@ -160,7 +163,7 @@
                         console.log(ddata[2]);
                         sessionStorage.setItem('TransactionId', parseInt(ddata[2].transactionId));
 
-                    }else if (la == "bootNotification") {
+                    } else if (la === "bootNotification") {
                         statusNotification();
                     }
                     logMsg("Received: ");
@@ -171,47 +174,53 @@
                     logMsg((JSON.parse(msg.data))[2]);
                     logMsg(msg.data);
                     id = (JSON.parse(msg.data))[1];
-                     
+
                     switch (ddata[2]) {
                         case "ClearCache":
-                            var ClearS = JSON.stringify([3, id, {"status": "Accepted"}]);
+                            const ClearS = JSON.stringify([3, id, {"status": "Accepted"}]);
                             _websocket.send(ClearS);
                             break;
                         case "Reset":
-                            var ResetS = JSON.stringify([3, id, {"status": "Accepted"}]);
+                            const ResetS = JSON.stringify([3, id, {"status": "Accepted"}]);
                             _websocket.send(ResetS);
                             location.reload();
                             break;
                         case "ChangeAvailability":
-                            var ChangeS = JSON.stringify([3, id, {"status": "Accepted"}]);
+                            const ChangeS = JSON.stringify([3, id, {"status": "Accepted"}]);
                             _websocket.send(ChangeS);
                             break;
                         case "RemoteStopTransaction":
-                            var remStp = JSON.stringify([3, id, {"status": "Accepted"}]);
-                            logMsg(remStrt);
-                            _websocket.send(remStp)
-                            var stop_id = (JSON.parse(msg.data)[3].transactionId);
+                            const remStop = JSON.stringify([3, id, {"status": "Accepted"}]);
+                            logMsg(remStop);
+                            _websocket.send(remStop)
+                            const stop_id = (JSON.parse(msg.data)[3].transactionId);
                             sleep(5000);
-							logMsg("Sending... StopTransaction");
-                            stopTransaction(ddata[3].idTag,stop_id);
+                            logMsg("Sending... StopTransaction");
+                            stopTransaction(ddata[3].idTag, stop_id);
                             $('.indicator').hide();
                             $('#yellow').show();
                             break;
 
                         case "RemoteStartTransaction":
-                            
-                            var remStrt = JSON.stringify([3, id, {"status": "Accepted"}]);
-                            logMsg(remStrt);
-                            _websocket.send(remStrt);
+
+                            const remStart = JSON.stringify([3, id, {"status": "Accepted"}]);
+                            logMsg(remStart);
+                            _websocket.send(remStart);
                             //console.log('uiiu'+ddata)
                             sleep(5000);
-							logMsg("Sending... StartTransaction");
+                            logMsg("Sending... StartTransaction");
                             startTransaction(ddata[3].idTag, ddata[3].connectorId);
 
                             break;
 
                         case "GetConfiguration":
-                            let mx = {configurationKey:[{key:'HeartbeatInterval',readonly: true,value:10000},{key:'connectors',readonly:true,value:'2'}]};
+                            let mx = {
+                                configurationKey: [{key: 'HeartbeatInterval', readonly: true, value: 10000}, {
+                                    key: 'connectors',
+                                    readonly: true,
+                                    value: '2'
+                                }]
+                            };
                             message = JSON.stringify([3, id, mx]);
                             logMsg(message);
                             _websocket.send(message);
@@ -223,18 +232,18 @@
                             logMsg(message);
                             _websocket.send(message);
 
-                            break;    
-                        case "UnlockConnector": 
+                            break;
+                        case "UnlockConnector":
                             //connectorId
-                            var UC = JSON.stringify([3, id, {"status": "Unlocked"}]);
+                            const UC = JSON.stringify([3, id, {"status": "Unlocked"}]);
                             _websocket.send(UC);
-                             connector_locked = false;
-                             $('.indicator').hide();
+                            connector_locked = false;
+                            $('.indicator').hide();
                             $('#yellow').show();
-                            logMsg("Connector status changed to: "+connector_locked);
+                            logMsg("Connector status changed to: " + connector_locked);
                             break;
                         default:
-                            var error = JSON.stringify([4, id]);
+                            const error = JSON.stringify([4, id]);
                             _websocket.send(error);
                             break;
                     }
@@ -243,7 +252,7 @@
 
             _websocket.onclose = function (evt) {
                 $('#connect').text('Connect').css('background', '#369');
-                if (evt.code == 3001) {
+                if (evt.code === 3001) {
                     logMsg('ws closed');
                     _websocket = null;
                 } else {
@@ -255,7 +264,7 @@
             };
 
             _websocket.onerror = function (evt) {
-                if (_websocket.readyState == 1) {
+                if (_websocket.readyState === 1) {
                     $('#red').show();
                     logMsg('ws normal error: ' + evt.type);
                 }
@@ -268,19 +277,19 @@
         $('#console').append('<li>' + err + '</li>');
     }
 
-    function Authorize(){
+    function Authorize() {
         sessionStorage.setItem('LastAction', "Authorize");
-        var Auth = JSON.stringify([2, id, "Authorize", {"idTag": $("#TAG").val()}]);
+        const Auth = JSON.stringify([2, id, "Authorize", {"idTag": $("#TAG").val()}]);
         _websocket.send(Auth);
     }
 
-    function startTransaction(idTag, connectorId){
+    function startTransaction(idTag, connectorId) {
         sessionStorage.setItem('LastAction', "startTransaction");
         $('.indicator').hide();
         $('#green').show();
         connector_locked = true;
         logMsg("Connector status changed to: " + connector_locked);
-        var strtT = JSON.stringify([2, id, "StartTransaction", {
+        const strtT = JSON.stringify([2, id, "StartTransaction", {
             "connectorId": connectorId,
             //"idTag": $("#TAG").val(),
             "idTag": idTag,
@@ -291,43 +300,51 @@
         _websocket.send(strtT);
     }
 
-    function stopTransaction(idTag,transactionId){
+    function stopTransaction(idTag, transactionId) {
         sessionStorage.setItem('LastAction', "stopTransaction");
         $('.indicator').hide();
         connector_locked = false;
         logMsg("Connector status changed to: " + connector_locked);
         $('#yellow').show();
-        var stpT = JSON.stringify([2, id, "StopTransaction",{
+        const stpT = JSON.stringify([2, id, "StopTransaction", {
             "transactionId": transactionId,
             "idTag": idTag,
-            "transactionData": [ { "sampledValue": [ { "context": "Interruption.Begin", "format": "Raw", "location": "Body", "measurand": "Energy.Active.Import.Register", "phase": "L1", "unit": "Wh", "value": "100" } ], "timestamp": formatDate(new Date()) } ],
+            "transactionData": [{
+                "sampledValue": [{
+                    "context": "Interruption.Begin",
+                    "format": "Raw",
+                    "location": "Body",
+                    "measurand": "Energy.Active.Import.Register",
+                    "phase": "L1",
+                    "unit": "Wh",
+                    "value": "100"
+                }], "timestamp": formatDate(new Date())
+            }],
             "timestamp": formatDate(new Date()),
             "meterStop": 20
         }]);
         _websocket.send(stpT);
     }
 
-    function handleData(data, request = false){
-        var lastAction = getLastAction();
-        if(lastAction = "BootNotification"){
+    function handleData(data, request = false) {
+        const lastAction = getLastAction();
+        if (lastAction === "BootNotification") {
             data = JSON.parse(data[2]);
-            heartbeat_interval = data.interval;
-            return heartbeat_interval;
-        }else if(lastAction = "StartTransaction"){
+            return data.interval; // heartbeat interval
+        } else if (lastAction === "StartTransaction") {
             return "StartTransaction";
-        }else if (1==2){
+        } else {
             alert("else");
         }
     }
 
-    function getLastAction(){
-        var LastAction = sessionStorage.getItem("LastAction");
-        return LastAction;
+    function getLastAction() {
+        return sessionStorage.getItem("LastAction");
     }
 
-    function BootNotification(){
-        var idB = randomString(5,possible)
-        var BN = JSON.stringify([2, id, "BootNotification", {
+    function BootNotification() {
+        const idB = randomString(5, possible);
+        const BN = JSON.stringify([2, id, "BootNotification", {
             "chargePointVendor": "pt.abb",
             "chargePointModel": "DC Wallbox CE",
             "chargePointSerialNumber": "avt00113101",
@@ -344,28 +361,28 @@
     }
 
     function sleep(milliseconds) {
-	  const date = Date.now();
-	  let currentDate = null;
-	  do {
-		currentDate = Date.now();
-	  } while (currentDate - date < milliseconds);
-	}
+        const date = Date.now();
+        let currentDate = null;
+        do {
+            currentDate = Date.now();
+        } while (currentDate - date < milliseconds);
+    }
 
 
-    function startHB(interval){
-        logMsg("Setting heartbeat interval to "+interval);
+    function startHB(interval) {
+        logMsg("Setting heartbeat interval to " + interval);
         //setInterval(send_heartbeat,interval);
     }
 
     function send_heartbeat() {
         sessionStorage.setItem('LastAction', "Heartbeat");
-        var HB = JSON.stringify([2, id, "Heartbeat", {}]);
+        const HB = JSON.stringify([2, id, "Heartbeat", {}]);
         _websocket.send(HB);
     }
 
     function statusNotification() {
         sessionStorage.setItem('LastAction', "StatusNotification");
-        var SN = JSON.stringify([2, id, "StatusNotification", {
+        let SN = JSON.stringify([2, id, "StatusNotification", {
             "connectorId": 1,
             "status": "Available",
             "errorCode": "NoError",
@@ -377,7 +394,7 @@
         logMsg(SN);
         _websocket.send(SN);
 
-         SN = JSON.stringify([2, id, "StatusNotification", {
+        SN = JSON.stringify([2, id, "StatusNotification", {
             "connectorId": 0,
             "status": "Available",
             "errorCode": "NoError",
@@ -390,7 +407,7 @@
         _websocket.send(SN);
     }
 
-    $( document ).ready(function() {
+    $(document).ready(function () {
         $('.indicator').hide();
         $('#red').show();
 
@@ -406,19 +423,34 @@
         });
 
         $('#start').click(function () {
-            startTransaction();
+            startTransaction($("#TAG").val(), 1);
         });
 
         $('#stop').click(function () {
-            stopTransaction();
+            stopTransaction($("#TAG").val(), 1);
         });
 
         $('#mv').click(function () {
             sessionStorage.setItem('LastAction', "MeterValues");
             //if(!ssid) ssid=0;
             ssid = sessionStorage.getItem('TransactionId')
-            var val = $("#metervalue").val();
-            var MV = JSON.stringify([2, id, "MeterValues", {"connectorId": 1, "transactionId": parseInt(ssid), "meterValue": [{"timestamp": formatDate(new Date()), "sampledValue": [{"value": val, "context": "Interruption.Begin","format": "Raw","location": "Body","measurand": "Current.Export","phase": "L1","unit": "Wh"}]}]}]);
+            const val = $("#metervalue").val();
+            const MV = JSON.stringify([2, id, "MeterValues", {
+                "connectorId": 1,
+                "transactionId": parseInt(ssid),
+                "meterValue": [{
+                    "timestamp": formatDate(new Date()),
+                    "sampledValue": [{
+                        "value": val,
+                        "context": "Interruption.Begin",
+                        "format": "Raw",
+                        "location": "Body",
+                        "measurand": "Current.Export",
+                        "phase": "L1",
+                        "unit": "Wh"
+                    }]
+                }]
+            }]);
             _websocket.send(MV);
 
         });
@@ -427,12 +459,12 @@
         });
 
         $('#status').click(function () {
-           statusNotification()
+            statusNotification()
         });
 
         $('#data_transfer').click(function () {
             sessionStorage.setItem('LastAction', "DataTransfer");
-            var DT = JSON.stringify([2, id, "DataTransfer", {
+            const DT = JSON.stringify([2, id, "DataTransfer", {
                 "vendorId": "rus.avt.cp",
                 "messageId": "GetChargeInstruction",
                 "data": ""
